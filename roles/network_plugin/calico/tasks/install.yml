@@ -13,6 +13,8 @@
     owner: kube
   register: calico_conflist
   notify: reset_calico_cni
+  when:
+    - container_manager != 'containerd'
 
 - name: Calico | Create calico certs directory
   file:
@@ -33,6 +35,31 @@
     - {s: "{{ kube_etcd_cert_file }}", d: "cert.crt"}
     - {s: "{{ kube_etcd_key_file }}", d: "key.pem"}
 
+- name: Calico | Link etcd certificates for calico-node
+  file:
+    src: "{{ etcd_cert_dir }}/{{ item.s }}"
+    dest: "{{ calico_cert_dir }}/{{ item.d }}"
+    state: hard
+    force: yes
+  with_items:
+    - {s: "ca.pem", d: "etcd-ca"}
+    - {s: "node-{{ inventory_hostname }}.pem", d: "etcd-cert"}
+    - {s: "node-{{ inventory_hostname }}-key.pem", d: "etcd-key"}
+  when:
+    - container_manager == 'containerd'
+    - calico_version is version("v3.4.0", ">=")
+
+- name: Calico | Install calicoctl config file
+  template:
+    src: calicoctl-config.j2
+    dest: "/etc/calico/calicoctl.cfg"
+    mode: 0755
+    owner: root
+    group: root
+  changed_when: false
+  when:
+    - container_manager == 'containerd'
+
 - name: Calico | Install calicoctl wrapper script
   template:
     src: calicoctl.sh.j2
@@ -40,6 +67,45 @@
     mode: 0755
     owner: root
     group: root
+  changed_when: false
+
+- name: Calico | Set cni directory permissions
+  file:
+    path: /opt/cni/bin
+    state: directory
+    owner: kube
+    recurse: true
+    mode: 0755
+
+- name: Calico | Copy cni plugins
+  unarchive:
+    src: "{{ local_release_dir }}/cni-plugins-{{ image_arch }}-{{ cni_version }}.tgz"
+    dest: "/opt/cni/bin"
+    mode: 0755
+    remote_src: yes
+
+- name: Calico | Copy calico cni plugins
+  copy:
+    src: "{{local_release_dir}}/calico-amd64-{{ calico_cni_version }}"
+    dest: "/opt/cni/bin/calico"
+    mode: 0755
+    remote_src: yes
+  when:
+    - container_manager == 'containerd'
+    - calico_version is version("v3.4.0", "<")
+
+- name: Calico | Copy cni plugins from calico/cni container
+  command: "{{ docker_bin_dir }}/docker run --rm -v /opt/cni/bin:/cnibindir {{ calico_cni_image_repo }}:{{ calico_cni_image_tag }} sh -c 'cp /opt/cni/bin/* /cnibindir/'"
+  register: cni_task_result
+  until: cni_task_result.rc == 0
+  retries: 4
+  delay: "{{ retry_stagger | random + 3 }}"
+  changed_when: false
+  when:
+    - container_manager != 'containerd'
+  tags:
+    - hyperkube
+    - upgrade
 
 - name: Calico | wait for etcd
   uri:
@@ -52,6 +118,25 @@
   retries: 10
   delay: 5
   run_once: true
+
+- name: Calico | Prepare calico install calico.yaml in tmp directoy
+  template:
+    src: calico-install.yml.j2
+    dest: "/tmp/calico.yaml"
+    mode: 0755
+    owner: root
+    group: root
+  when:
+    - container_manager == 'containerd'
+    - calico_version is version("v3.4.0", ">=")
+
+- name: Calico | Install calico from calico.yaml from tmp directoy
+  shell: >
+    {{ bin_dir }}/kubectl apply -f /tmp/calico.yaml
+  run_once: true
+  when:
+    - container_manager == 'containerd'
+    - calico_version is version("v3.4.0", ">=")
 
 - name: Calico | Check if calico network pool has already been configured
   shell: >
@@ -335,7 +420,6 @@
     - peer_with_calico_rr|default(false)
     - hostvars[item]['cluster_id'] == cluster_id
 
-
 - name: Calico | Create calico manifests
   template:
     src: "{{item.file}}.j2"
@@ -350,3 +434,4 @@
   when:
     - inventory_hostname in groups['kube-master']
     - rbac_enabled or item.type not in rbac_resources
+    - container_manager != 'containerd'
