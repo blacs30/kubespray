@@ -34,6 +34,30 @@
   tags:
     - services
 
+- name: reset | stop containerd service
+  service:
+    name: "{{ item }}"
+    state: stopped
+  with_items:
+    - containerd
+  failed_when: false
+  when:
+    - container_manager == 'containerd'
+  tags:
+    - services
+
+- name: reset | remove containerd service
+  file:
+    path: "/etc/systemd/system/{{ item }}.service"
+    state: absent
+  with_items:
+    - containerd
+  register: services_removed
+  when:
+    - container_manager == 'containerd'
+  tags:
+    - services
+
 - name: reset | remove docker dropins
   file:
     path: "/etc/systemd/system/docker.service.d/{{ item }}"
@@ -87,7 +111,7 @@
   delay: 5
   tags:
     - crio
-  when: container_manager == 'crio' and deploy_container_engine|default(true)
+  when: (container_manager == 'crio' or container_manager == 'crio') and deploy_container_engine|default(true)
 
 - name: reset | stop all cri-o pods
   shell: "crictl pods -q | xargs -r crictl stopp"
@@ -224,6 +248,14 @@
     - /etc/openvswitch
     - /run/openvswitch
     - /var/lib/kube-router
+    - "{{ bin_dir }}/crictl"
+    - "{{ bin_dir }}/containerd"
+    - "{{ bin_dir }}/containerd-shim-runc-v1"
+    - "{{ bin_dir }}/containerd-stress"
+    - "{{ bin_dir }}/containerd-shim"
+    - "{{ bin_dir }}/ctr"
+    - "{{ bin_dir }}/runc"
+    - /tmp/releases
   ignore_errors: yes
   tags:
     - files

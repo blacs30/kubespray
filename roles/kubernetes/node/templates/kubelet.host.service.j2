@@ -1,8 +1,13 @@
 [Unit]
 Description=Kubernetes Kubelet Server
 Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+{% if container_manager == 'containerd' %}
+After=containerd.service
+Wants=containerd.socket
+{% else %}
 After=docker.service
 Wants=docker.socket
+{% endif %}
 
 [Service]
 User=root

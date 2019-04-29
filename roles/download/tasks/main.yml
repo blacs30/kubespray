@@ -25,9 +25,11 @@
     - item.value.container | default(false)
     - download_run_once
     - group_names | intersect(download.groups) | length
+    - not skip_container_downloads|default(false)
 
 - include_tasks: kubeadm_images.yml
   when:
     - kube_version is version('v1.11.0', '>=')
     - not skip_downloads|default(false)
     - inventory_hostname in groups['kube-master']
+    - not skip_container_downloads|default(false)
