@@ -6,10 +6,8 @@
     - Preinstall | reload kubelet
     - Preinstall | kube-controller configured
     - Preinstall | kube-apiserver configured
-    - Preinstall | docker restart kube-controller-manager
-    - Preinstall | crictl restart kube-controller-manager
-    - Preinstall | docker restart kube-apiserver
-    - Preinstall | crictl restart kube-apiserver
+    - Preinstall | restart kube-controller-manager
+    - Preinstall | restart kube-apiserver
   when: not ansible_os_family in ["CoreOS", "Container Linux by CoreOS"]
 
   # FIXME(bogdando) https://github.com/projectcalico/felix/issues/1185
@@ -44,10 +42,8 @@
   notify:
     - Preinstall | kube-controller configured
     - Preinstall | kube-apiserver configured
-    - Preinstall | docker restart kube-controller-manager
-    - Preinstall | crictl restart kube-controller-manager
-    - Preinstall | docker restart kube-apiserver
-    - Preinstall | crictl restart kube-apiserver
+    - Preinstall | restart kube-controller-manager
+    - Preinstall | restart kube-apiserver
   when: not dns_early|bool
 
 # FIXME(mattymo): Also restart for kubeadm mode
@@ -62,26 +58,22 @@
   register: kube_controller_set
   when: inventory_hostname in groups['kube-master'] and dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'
 
-- name: Preinstall | docker restart kube-controller-manager
-  shell: "docker ps -f name=k8s_POD_kube-controller-manager* -q | xargs --no-run-if-empty docker rm -f"
+- name: Preinstall | restart kube-controller-manager
+  shell: >-
+    {% if container_manager != 'containerd' %}
+    docker ps -f name=k8s_POD_kube-controller-manager* -q | xargs --no-run-if-empty docker rm -f
+    {% else %}
+    crictl --runtime-endpoint=unix:///var/run/containerd/containerd.sock ps --name=kube-controller-manager* -q | xargs --no-run-if-empty crictl --runtime-endpoint=unix:///var/run/containerd/containerd.sock rm
+    {% endif %}
   when:
     - inventory_hostname in groups['kube-master'] and dns_mode != 'none' and resolvconf_mode == 'host_resolvconf' and kube_controller_set.stat.exists
-    - container_manager != 'containerd'
 
-- name: Preinstall | docker restart kube-apiserver
-  shell: "docker ps -f name=k8s_POD_kube-apiserver* -q | xargs --no-run-if-empty docker rm -f"
+- name: Preinstall | restart kube-apiserver
+  shell: >-
+    {% if container_manager != 'containerd' %}
+    docker ps -f name=k8s_POD_kube-apiserver* -q | xargs --no-run-if-empty docker rm -f
+    {% else %}
+    crictl --runtime-endpoint=unix:///var/run/containerd/containerd.sock ps --name=kube-apiserver* -q | xargs --no-run-if-empty crictl --runtime-endpoint=unix:///var/run/containerd/containerd.sock rm
+    {% endif %}
   when:
     - inventory_hostname in groups['kube-master'] and dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'
-    - container_manager != 'containerd'
-
-- name: Preinstall | crictl restart kube-controller-manager
-  shell: "crictl --runtime-endpoint=unix:///var/run/containerd/containerd.sock ps --name=kube-controller-manager* -q | xargs --no-run-if-empty crictl --runtime-endpoint=unix:///var/run/containerd/containerd.sock rm"
-  when:
-    - inventory_hostname in groups['kube-master'] and dns_mode != 'none' and resolvconf_mode == 'host_resolvconf' and kube_controller_set.stat.exists
-    - container_manager == 'containerd'
-
-- name: Preinstall | crictl restart kube-apiserver
-  shell: "crictl --runtime-endpoint=unix:///var/run/containerd/containerd.sock ps --name=kube-apiserver* -q | xargs --no-run-if-empty crictl --runtime-endpoint=unix:///var/run/containerd/containerd.sock rm"
-  when:
-    - inventory_hostname in groups['kube-master'] and dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'
-    - container_manager == 'containerd'
