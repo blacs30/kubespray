@@ -120,6 +120,7 @@
     - 'calico_conf.stdout == "0"'
     - calico_version is version("v3.0.0", ">=")
     - calico_version is version("v3.3.0", "<")
+    - calico_datastore != "kdd"
 
 - name: Calico | Configure calico network pool (version >= v3.3.0)
   shell: >
@@ -139,6 +140,7 @@
   when:
     - 'calico_conf.stdout == "0"'
     - calico_version is version("v3.3.0", ">=")
+    - calico_datastore != "kdd"
 
 - name: Calico | Configure calico network pool (legacy)
   shell: >
@@ -156,6 +158,7 @@
   when:
     - 'calico_conf.stdout == "0"'
     - calico_version is version("v3.0.0", "<")
+    - calico_datastore != "kdd"
 
 - name: "Determine nodeToNodeMesh needed state"
   set_fact:
@@ -182,6 +185,7 @@
   changed_when: false
   when:
     - calico_version is version('v3.0.0', '>=')
+    - calico_datastore != "kdd"
 
 - name: Calico | Set global as_num (legacy)
   command: "{{ bin_dir}}/calicoctl.sh config set asNumber {{ global_as_num }}"
@@ -218,6 +222,7 @@
     - inventory_hostname in groups['k8s-cluster']
     - local_as is defined
     - groups['calico-rr'] | default([]) | length == 0
+    - calico_datastore != "kdd"
 
 - name: Calico | Configure node asNumber for per node peering (legacy)
   shell: >
@@ -241,6 +246,7 @@
     - inventory_hostname in groups['k8s-cluster']
     - local_as is defined
     - groups['calico-rr'] | default([]) | length == 0
+    - calico_datastore != "kdd"
 
 - name: Calico | Configure peering with router(s) at node scope
   shell: >
@@ -263,6 +269,7 @@
     - calico_version is version('v3.0.0', '>=')
     - peer_with_router|default(false)
     - inventory_hostname in groups['k8s-cluster']
+    - calico_datastore != "kdd"
 
 - name: Calico | Configure peering with router(s) at node scope (legacy)
   shell: >
@@ -302,6 +309,7 @@
     - calico_version | version_compare('v3.0.0', '>=')
     - peer_with_router|default(false)
     - inventory_hostname in groups['k8s-cluster']
+    - calico_datastore != "kdd"
 
 - name: Calico | Configure peering with router(s) at global scope (legacy)
   shell: >
@@ -343,6 +351,7 @@
     - peer_with_calico_rr|default(false)
     - inventory_hostname in groups['k8s-cluster']
     - hostvars[item]['cluster_id'] == cluster_id
+    - calico_datastore != "kdd"
 
 - name: Calico | Configure peering with route reflectors (legacy)
   shell: >
@@ -385,6 +394,8 @@
     dest: "{{kube_config_dir}}/{{item.file}}"
   with_items:
     - {name: calico, file: kdd-crds.yml, type: kdd}
+    - {name: calico, file: calico-global-as_num-k8s.yml, type: kdd}
+    - {name: calico, file: calico-network-pool-k8s.yml, type: kdd}
   register: calico_node_kdd_manifest
   when:
     - inventory_hostname in groups['kube-master']
