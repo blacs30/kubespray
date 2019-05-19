@@ -1,6 +1,10 @@
 #!/bin/bash
+{% if calico_datastore == 'kdd' %}
+DATASTORE_TYPE=kubernetes KUBECONFIG=~/.kube/config {{ bin_dir }}/calicoctl "$@"
+{% else %}
 ETCD_ENDPOINTS={{ etcd_access_addresses }} \
 ETCD_CA_CERT_FILE={{ calico_cert_dir }}/ca_cert.crt \
 ETCD_CERT_FILE={{ calico_cert_dir }}/cert.crt \
 ETCD_KEY_FILE={{ calico_cert_dir }}/key.pem \
 {{ bin_dir }}/calicoctl "$@"
+{% endif %}

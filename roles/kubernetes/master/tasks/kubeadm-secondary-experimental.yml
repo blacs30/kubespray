@@ -5,7 +5,7 @@
       {%- if "127.0.0.1" in kube_apiserver_endpoint or "localhost" in kube_apiserver_endpoint -%}
       {{ first_kube_master }}:{{ kube_apiserver_port }}
       {%- else -%}
-      {{ kube_apiserver_endpoint }}
+      {{ kube_apiserver_endpoint | regex_replace('https://', '')}}
       {%- endif %}
   tags:
     - facts
@@ -34,9 +34,9 @@
     {% if kubeadm_certificate_key is defined %}
     --certificate-key={{ kubeadm_certificate_key }}
     {% endif %}
-  run_once: yes
   register: kubeadm_upload_cert
-  delegate_to: "{{ groups['kube-master'][0] }}"
+  when:
+    - inventory_hostname == groups['kube-master']|first
 
 - name: Parse certificate key if not set
   set_fact:
