@@ -8,7 +8,6 @@
     filename: "{{kube_config_dir}}/{{item.item.file}}"
     state: "latest"
   with_items:
-    - "{{ calico_node_kdd_manifest.results }}"
     - "{{ calico_node_manifests.results }}"
     - "{{ calico_node_typha_manifest.results }}"
   when:
