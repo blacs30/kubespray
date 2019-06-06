@@ -12,6 +12,7 @@
   set_fact:
     sync_certs: false
     gen_certs: false
+    gen_storageos_certs: false
     etcd_secret_changed: false
 
 - name: "Check certs | check if a cert already exists on node"
@@ -62,3 +63,16 @@
       (not etcdcert_node.results[0].stat.exists|default(false)) or
       (not etcdcert_node.results[1].stat.exists|default(false)) or
       (etcdcert_node.results[1].stat.checksum|default('') != etcdcert_master.files|selectattr("path", "equalto", etcdcert_node.results[1].stat.path)|map(attribute="checksum")|first|default(''))
+
+
+- name: "Check_certs | Set 'gen_storageos_certs' to true"
+  set_fact:
+    gen_storageos_certs: true
+  when: not item in etcdcert_master.files|map(attribute='path') | list
+  run_once: true
+  with_items: "{{ expected_files }}"
+  vars:
+    expected_files: >-
+       ['{{etcd_cert_dir}}/ca.pem',
+       '{{etcd_cert_dir}}/storageos-key.pem'
+       '{{etcd_cert_dir}}/storageos.pem']

@@ -1,0 +1,3 @@
+---
+persistent_volumes_enabled: false
+storageos_request_memory: 512Mi

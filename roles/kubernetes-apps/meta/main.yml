@@ -37,6 +37,15 @@ dependencies:
       - apps
       - persistent_volumes
 
+  - role: kubernetes-apps/persistent_volumes/storageos-cli
+    when:
+      - persistent_volumes_enabled
+      - storageos_operator_enabled
+    tags:
+      - apps
+      - persistent_volumes
+      - persistent_volumes_storageos
+
   - role: kubernetes-apps/container_engine_accelerator
     when: nvidia_accelerator_enabled
     tags:
