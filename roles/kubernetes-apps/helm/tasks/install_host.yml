@@ -26,5 +26,5 @@
   args:
     creates: "{{ bin_dir }}/socat"
   when:
-    - ansible_os_family in ['CoreOS', 'Container Linux by CoreOS']
+    - ansible_os_family in ['CoreOS', 'Coreos', 'coreos', 'Container Linux by CoreOS']
     - is_socat_exist.rc != 0
