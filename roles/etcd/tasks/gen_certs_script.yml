@@ -48,7 +48,7 @@
   run_once: yes
   delegate_to: "{{groups['etcd'][0]}}"
   when:
-    - gen_certs|default(false)
+    - gen_certs|default(false) or gen_storageos_certs|default(false)
     - inventory_hostname == groups['etcd'][0]
 
 - name: Gen_certs | run cert generation script
@@ -64,11 +64,23 @@
                     {{ h }}
                 {% endif %}
               {% endfor %}"
+    - STORAGEOS: "{% if gen_storageos_certs %}
+                    storageos
+                 {% endif %}"
   run_once: yes
   delegate_to: "{{groups['etcd'][0]}}"
   when:
     - gen_certs|default(false)
   notify: set etcd_secret_changed
+
+- name: Gen_certs | run storageos cert generation script
+  command: "bash -x {{ etcd_script_dir }}/make-ssl-etcd.sh -f {{ etcd_config_dir }}/openssl.conf -d {{ etcd_cert_dir }}"
+  environment:
+    - STORAGEOS: "storageos"
+  run_once: yes
+  delegate_to: "{{groups['etcd'][0]}}"
+  when:
+    - gen_storageos_certs|default(false)
 
 - name: Gen_certs | Gather etcd master certs
   slurp:
@@ -158,3 +170,18 @@
     owner: kube
     mode: 0640
     recurse: yes
+
+- name: Gen_certs | storageos etcd certificates
+  # shell: "base64 -w 0 <<< '{{item.file.stdout|quote}}' | tar xz -C {{ etcd_cert_dir }}"
+  shell: "cat '{{item.file}}' | base64 --wrap=0"
+  args:
+    executable: /bin/bash
+  with_items:
+    - {name: ca, file: "{{ etcd_cert_dir }}/ca.pem" }
+    - {name: crt, file: "{{ etcd_cert_dir }}/storageos.pem" }
+    - {name: key, file: "{{ etcd_cert_dir }}/storageos-key.pem" }
+  register: storageos_certs
+  failed_when: false
+  when:
+    - inventory_hostname == groups['etcd'][0]
+    - storageos_operator_enabled

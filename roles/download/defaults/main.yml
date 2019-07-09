@@ -67,6 +67,8 @@ multus_version: "v3.1.autoconf"
 containerd_version: 1.2.6
 runc_version: 1.0.0-rc8
 crictl_version: 1.14.0
+storageos_version: 1.2.1
+storageos_operator_version: 1.2.0
 
 # Download URLs
 containerd_download_url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}.linux-amd64.tar.gz"
@@ -77,6 +79,7 @@ hyperkube_download_url: "https://storage.googleapis.com/kubernetes-release/relea
 etcd_download_url: "https://github.com/coreos/etcd/releases/download/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-{{ image_arch }}.tar.gz"
 cni_download_url: "https://github.com/containernetworking/plugins/releases/download/{{ cni_version }}/cni-plugins-{{ image_arch }}-{{ cni_version }}.tgz"
 calicoctl_download_url: "https://github.com/projectcalico/calicoctl/releases/download/{{ calico_ctl_version }}/calicoctl-linux-{{ image_arch }}"
+storageos_download_url: "https://github.com/storageos/go-cli/releases/download/{{ storageos_version }}/storageos_linux_amd64"
 
 # Checksums
 hyperkube_checksums:
@@ -176,12 +179,16 @@ calicoctl_binary_checksums:
     v3.5.4: a4481178665658658a73e4ceca9a1dff5cccded4179615c91d1c3e49fd96f237
     v3.4.4: ff35d9e8b5c00e9fe47d05e8f5123ec98fd641370f8cd93f4fbb3d913da77ab6
 
+storageos_binary_checksums:
+  1.2.1: 0770383b0d7f792e1a408831951ef16fd9dc3644abaf72878846fc6cc1c7b686
+
 etcd_binary_checksum: "{{ etcd_binary_checksums[image_arch][etcd_version] }}"
 cni_binary_checksum: "{{ cni_binary_checksums[image_arch][cni_version] }}"
 hyperkube_binary_checksum: "{{ hyperkube_checksums[image_arch][kube_version] }}"
 kubeadm_binary_checksum: "{{ kubeadm_checksums[image_arch][kubeadm_version] }}"
 calicoctl_binary_checksum: "{{ calicoctl_binary_checksums[image_arch][calico_ctl_version] }}"
 runc_archive_checksum: "{{ runc_archive_checksums[runc_version] }}"
+storageos_binary_checksum: "{{ storageos_binary_checksums[storageos_version] }}"
 
 # Containers
 # In some cases, we need a way to set --registry-mirror or --insecure-registry for docker,
@@ -291,6 +298,11 @@ addon_resizer_image_tag: "{{ addon_resizer_version }}"
 
 dashboard_image_repo: "gcr.io/google_containers/kubernetes-dashboard-{{ image_arch }}"
 dashboard_image_tag: "v1.10.1"
+
+storageos_node_image_repo: "storageos/node"
+storageos_node_image_tag: "{{ storageos_version }}"
+storageos_operator_image_repo: "storageos/cluster-operator"
+storageos_operator_image_tag: "{{ storageos_operator_version }}"
 
 downloads:
   netcheck_server:
@@ -758,6 +770,39 @@ downloads:
     unarchive: false
     groups:
       - k8s-cluster
+
+  storageos-cli:
+    enabled: "{{ storageos_operator_enabled }}"
+    file: true
+    version: "{{ storageos_version }}"
+    dest: "{{local_release_dir}}/storageos-linux-amd64-{{ storageos_version }}"
+    sha256: "{{ storageos_binary_checksum }}"
+    url: "{{ storageos_download_url }}"
+    owner: "root"
+    mode: "0755"
+    unarchive: false
+    groups:
+      - k8s-cluster
+
+  storageos-node:
+    enabled: "{{ storageos_operator_enabled }}"
+    container: true
+    repo: "{{ storageos_node_image_repo }}"
+    tag: "{{ storageos_node_image_tag }}"
+    sha256: "{{ storageos_node_digest_checksum|default(None) }}"
+    groups:
+      - kube-master
+
+
+  storageos-operator:
+    enabled: "{{ storageos_operator_enabled }}"
+    container: true
+    repo: "{{ storageos_operator_image_repo }}"
+    tag: "{{ storageos_operator_image_tag }}"
+    sha256: "{{ storageos_operator_digest_checksum|default(None) }}"
+    groups:
+      - kube-master
+
 
 download_defaults:
   container: false

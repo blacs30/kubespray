@@ -94,6 +94,17 @@ if [ -n "$HOSTS" ]; then
     done
 fi
 
+{% if storageos_operator_enabled %}
+if [ -n "$STORAGEOS" ]; then
+    for host in $STORAGEOS; do
+        cn="${host%%.*}"
+        openssl genrsa -out ${host}-key.pem {{certificates_key_size}} > /dev/null 2>&1
+        openssl req -new -key ${host}-key.pem -out ${host}.csr -subj "/CN=etcd-node-${cn}" > /dev/null 2>&1
+        openssl x509 -req -in ${host}.csr -CA ca.pem -CAkey ca-key.pem -CAcreateserial -out ${host}.pem -days {{certificates_duration}} -extensions ssl_client  -extfile ${CONFIG} > /dev/null 2>&1
+    done
+fi
+{% endif %}
+
 # Install certs
 if [ -e "$SSLDIR/ca-key.pem" ]; then
     # No pass existing CA

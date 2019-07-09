@@ -1,0 +1,71 @@
+---
+- name: Kubernetes Persistent Volumes | Lay down StorageOS Operator templates
+  template:
+    src: "{{item.file}}.j2"
+    dest: "{{kube_config_dir}}/{{item.file}}"
+  with_items:
+    - {name: storageos-ns, file: 000-namespaces.yml}
+    - {name: storageos-sa, file: 010-service-account.yml}
+    - {name: storageos-psp-operator, file: 015-psp-storageos-operator.yml}
+    - {name: storageos-crd, file: 020-crd.yml}
+    - {name: storageos-cr, file: 030-clusterrole.yml}
+    - {name: storageos-crb, file: 035-clusterole-binding.yml}
+    - {name: storageos-deployment, file: 040-operator-deployment.yml}
+    - {name: storageos-secrets, file: 050-secret.yml}
+  register: storageos_manifest
+  when:
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Kubernetes Persistent Volumes | Add StorageOS Operator manifests
+  kube:
+    name: "{{item.item.name}}"
+    kubectl: "{{bin_dir}}/kubectl"
+    filename: "{{kube_config_dir}}/{{item.item.file}}"
+    state: "latest"
+    namespace: "{{item.item.namespace|default('')}}"
+  with_items:
+    - "{{ storageos_manifest.results }}"
+  when:
+    - inventory_hostname == groups['kube-master'][0]
+    - storageos_manifest.changed
+  loop_control:
+    label: "{{ item.item.file }}"
+
+- name: Check that storageos-operator pod is running and ready
+  shell: "{{bin_dir}}/kubectl get pods -n storageos-operator --no-headers -o yaml"
+  register: run_storageos_pods_log
+  until:
+  # Check that storageos-operator pod is running
+  - '(run_storageos_pods_log.stdout | from_yaml)["items"] | map(attribute = "status.phase") | unique | list == ["Running"]'
+  # Check that storageos-operator pod is ready
+  - '(run_storageos_pods_log.stdout | from_yaml)["items"] | map(attribute = "status.containerStatuses") | map("map", attribute = "ready") | map("min") | min'
+  retries: 18
+  delay: 10
+  failed_when: false
+  no_log: true
+
+- name: Kubernetes Persistent Volumes | Lay down StorageOSCluster templates
+  template:
+    src: "{{item.file}}.j2"
+    dest: "{{kube_config_dir}}/{{item.file}}"
+  with_items:
+    - {name: storageos-cluster, file: 060-external-etcd.yml, namespace: storageos-operator}
+    - {name: storageos-psp, file: 070-psp.yml}
+  register: storageos_cluster_manifest
+  when:
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Kubernetes Persistent Volumes | Add StorageOSCluster manifests
+  kube:
+    name: "{{item.item.name}}"
+    kubectl: "{{bin_dir}}/kubectl"
+    filename: "{{kube_config_dir}}/{{item.item.file}}"
+    state: "latest"
+    namespace: "{{item.item.namespace|default('')}}"
+  with_items:
+    - "{{ storageos_cluster_manifest.results }}"
+  when:
+    - inventory_hostname == groups['kube-master'][0]
+    - storageos_cluster_manifest.changed
+  loop_control:
+    label: "{{ item.item.file }}"
