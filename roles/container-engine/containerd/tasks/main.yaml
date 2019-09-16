@@ -63,4 +63,3 @@
   file:
     path: /run/systemd/system/docker.service
     state: absent
-  failed_when: false

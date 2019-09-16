@@ -6,9 +6,3 @@ dependencies:
       - cloud_provider in [ 'openstack' ]
     tags:
       - persistent_volumes_openstack
-
-  - role: kubernetes-apps/persistent_volumes/storageos
-    when:
-      - storageos_operator_enabled
-    tags:
-      - persistent_volumes_storageos

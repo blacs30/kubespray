@@ -1,7 +1,0 @@
----
-- name: Kubernetes Persistent Volumes | Copy storageos cli binary
-  copy:
-    src: "{{local_release_dir}}/storageos-linux-amd64-{{ storageos_version }}"
-    dest: "{{ bin_dir}}/storageos"
-    mode: 0755
-    remote_src: yes
