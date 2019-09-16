@@ -22,20 +22,20 @@ resource "openstack_networking_secgroup_rule_v2" "k8s_master" {
 
 resource "openstack_networking_secgroup_v2" "bastion" {
   name                 = "${var.cluster_name}-bastion"
-  count                = "${var.number_of_bastions ? 1 : 0}"
+  count                = "${var.number_of_bastions != "" ? 1 : 0}"
   description          = "${var.cluster_name} - Bastion Server"
   delete_default_rules = true
 }
 
 resource "openstack_networking_secgroup_rule_v2" "bastion" {
-  count             = "${var.number_of_bastions ? length(var.bastion_allowed_remote_ips) : 0}"
+  count             = "${var.number_of_bastions != "" ? length(var.bastion_allowed_remote_ips) : 0}"
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
   port_range_min    = "22"
   port_range_max    = "22"
   remote_ip_prefix  = "${var.bastion_allowed_remote_ips[count.index]}"
-  security_group_id = "${openstack_networking_secgroup_v2.bastion.id}"
+  security_group_id = "${openstack_networking_secgroup_v2.bastion[count.index].id}"
 }
 
 resource "openstack_networking_secgroup_v2" "k8s" {
@@ -99,7 +99,7 @@ resource "openstack_compute_instance_v2" "bastion" {
   }
 
   security_groups = ["${openstack_networking_secgroup_v2.k8s.name}",
-    "${openstack_networking_secgroup_v2.bastion.name}",
+    "${element(openstack_networking_secgroup_v2.bastion.*.name, count.index)}",
   ]
 
   metadata = {
@@ -109,7 +109,7 @@ resource "openstack_compute_instance_v2" "bastion" {
   }
 
   provisioner "local-exec" {
-    command = "sed s/USER/${var.ssh_user}/ contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${var.bastion_fips[0]}/ > contrib/terraform/group_vars/no-floating.yml"
+    command = "sed s/USER/${var.ssh_user}/ ../../contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${var.bastion_fips[0]}/ > group_vars/no-floating.yml"
   }
 }
 
@@ -136,7 +136,7 @@ resource "openstack_compute_instance_v2" "k8s_master" {
   }
 
   provisioner "local-exec" {
-    command = "sed s/USER/${var.ssh_user}/ contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element( concat(var.bastion_fips, var.k8s_master_fips), 0)}/ > contrib/terraform/group_vars/no-floating.yml"
+    command = "sed s/USER/${var.ssh_user}/ ../../contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element( concat(var.bastion_fips, var.k8s_master_fips), 0)}/ > group_vars/no-floating.yml"
   }
 }
 
@@ -163,7 +163,7 @@ resource "openstack_compute_instance_v2" "k8s_master_no_etcd" {
   }
 
   provisioner "local-exec" {
-    command = "sed s/USER/${var.ssh_user}/ contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element( concat(var.bastion_fips, var.k8s_master_fips), 0)}/ > contrib/terraform/group_vars/no-floating.yml"
+    command = "sed s/USER/${var.ssh_user}/ ../../contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element( concat(var.bastion_fips, var.k8s_master_fips), 0)}/ > group_vars/no-floating.yml"
   }
 }
 
@@ -257,7 +257,7 @@ resource "openstack_compute_instance_v2" "k8s_node" {
   }
 
   provisioner "local-exec" {
-    command = "sed s/USER/${var.ssh_user}/ contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element( concat(var.bastion_fips, var.k8s_node_fips), 0)}/ > contrib/terraform/group_vars/no-floating.yml"
+    command = "sed s/USER/${var.ssh_user}/ ../../contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element( concat(var.bastion_fips, var.k8s_node_fips), 0)}/ > group_vars/no-floating.yml"
   }
 }
 
@@ -285,15 +285,17 @@ resource "openstack_compute_instance_v2" "k8s_node_no_floating_ip" {
 }
 
 resource "openstack_compute_floatingip_associate_v2" "bastion" {
-  count       = "${var.number_of_bastions}"
-  floating_ip = "${var.bastion_fips[count.index]}"
-  instance_id = "${element(openstack_compute_instance_v2.bastion.*.id, count.index)}"
+  count                 = "${var.number_of_bastions}"
+  floating_ip           = "${var.bastion_fips[count.index]}"
+  instance_id           = "${element(openstack_compute_instance_v2.bastion.*.id, count.index)}"
+  wait_until_associated = "${var.wait_for_floatingip}"
 }
 
 resource "openstack_compute_floatingip_associate_v2" "k8s_master" {
-  count       = "${var.number_of_k8s_masters}"
-  instance_id = "${element(openstack_compute_instance_v2.k8s_master.*.id, count.index)}"
-  floating_ip = "${var.k8s_master_fips[count.index]}"
+  count                 = "${var.number_of_k8s_masters}"
+  instance_id           = "${element(openstack_compute_instance_v2.k8s_master.*.id, count.index)}"
+  floating_ip           = "${var.k8s_master_fips[count.index]}"
+  wait_until_associated = "${var.wait_for_floatingip}"
 }
 
 resource "openstack_compute_floatingip_associate_v2" "k8s_master_no_etcd" {
@@ -303,9 +305,10 @@ resource "openstack_compute_floatingip_associate_v2" "k8s_master_no_etcd" {
 }
 
 resource "openstack_compute_floatingip_associate_v2" "k8s_node" {
-  count       = "${var.number_of_k8s_nodes}"
-  floating_ip = "${var.k8s_node_fips[count.index]}"
-  instance_id = "${element(openstack_compute_instance_v2.k8s_node.*.id, count.index)}"
+  count                 = "${var.number_of_k8s_nodes}"
+  floating_ip           = "${var.k8s_node_fips[count.index]}"
+  instance_id           = "${element(openstack_compute_instance_v2.k8s_node.*.id, count.index)}"
+  wait_until_associated = "${var.wait_for_floatingip}"
 }
 
 resource "openstack_blockstorage_volume_v2" "glusterfs_volume" {

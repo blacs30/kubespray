@@ -71,11 +71,15 @@ rules:
       - globalbgpconfigs
       - bgpconfigurations
       - ippools
+{% if calico_version is version('v3.6.0', '>=') %}
       - ipamblocks
+{% endif %}
       - globalnetworkpolicies
       - globalnetworksets
       - networkpolicies
+{% if calico_version is version('v3.7.0', '>=') %}
       - networksets
+{% endif %}
       - clusterinformations
       - hostendpoints
     verbs:
@@ -108,6 +112,7 @@ rules:
     verbs:
       - create
       - update
+{% if calico_version is version('v3.6.0', '>=') %}
   # These permissions are required for Calico CNI to perform IPAM allocations.
   - apiGroups: ["crd.projectcalico.org"]
     resources:
@@ -131,4 +136,11 @@ rules:
       - blockaffinities
     verbs:
       - watch
+  # The Calico IPAM migration needs to get daemonsets. These permissions can be
+  # removed if not upgrading from an installation using host-local IPAM.
+  - apiGroups: ["apps"]
+    resources:
+      - daemonsets
+    verbs:
+      - get
 {% endif %}

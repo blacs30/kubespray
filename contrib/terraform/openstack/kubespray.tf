@@ -3,7 +3,7 @@ provider "openstack" {
 }
 
 module "network" {
-  source = "modules/network"
+  source = "./modules/network"
 
   external_net    = "${var.external_net}"
   network_name    = "${var.network_name}"
@@ -14,7 +14,7 @@ module "network" {
 }
 
 module "ips" {
-  source = "modules/ips"
+  source = "./modules/ips"
 
   number_of_k8s_masters         = "${var.number_of_k8s_masters}"
   number_of_k8s_masters_no_etcd = "${var.number_of_k8s_masters_no_etcd}"
@@ -27,7 +27,7 @@ module "ips" {
 }
 
 module "compute" {
-  source = "modules/compute"
+  source = "./modules/compute"
 
   cluster_name                                 = "${var.cluster_name}"
   az_list                                      = "${var.az_list}"
@@ -63,6 +63,7 @@ module "compute" {
   supplementary_master_groups                  = "${var.supplementary_master_groups}"
   supplementary_node_groups                    = "${var.supplementary_node_groups}"
   worker_allowed_ports                         = "${var.worker_allowed_ports}"
+  wait_for_floatingip                          = "${var.wait_for_floatingip}"
 
   network_id = "${module.network.router_id}"
 }
