@@ -197,9 +197,6 @@ podsecuritypolicy_enabled: false
 volume_cross_zone_attachment: false
 # Add Persistent Volumes Storage Class for corresponding cloud provider ( OpenStack is only supported now )
 persistent_volumes_enabled: false
-storageos_operator_enabled: true
-storageos_api_user: storageos
-storageos_api_password: "{{ lookup('password', credentials_dir + '/storageos_api.creds length=15 chars=ascii_letters,digits') }}"
 
 ## Container Engine Acceleration
 ## Enable container acceleration feature, for example use gpu acceleration in containers
