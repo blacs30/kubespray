@@ -63,7 +63,7 @@
     {% if container_manager != 'containerd' %}
     docker ps -f name=k8s_POD_kube-controller-manager* -q | xargs --no-run-if-empty docker rm -f
     {% else %}
-    crictl --runtime-endpoint=unix://{{ cir_socket }} ps --name=kube-controller-manager* -q | xargs --no-run-if-empty crictl --runtime-endpoint=unix://{{ cir_socket }} rm
+    crictl --runtime-endpoint=unix://{{ cri_socket }} ps --name=kube-controller-manager* -q | xargs --no-run-if-empty crictl --runtime-endpoint=unix://{{ cri_socket }} rm
     {% endif %}
   when: inventory_hostname in groups['kube-master'] and dns_mode != 'none' and resolvconf_mode == 'host_resolvconf' and kube_controller_set.stat.exists
 
@@ -72,6 +72,6 @@
     {% if container_manager != 'containerd' %}
     docker ps -f name=k8s_POD_kube-apiserver* -q | xargs --no-run-if-empty docker rm -f
     {% else %}
-    crictl --runtime-endpoint=unix://{{ cir_socket }} ps --name=kube-apiserver* -q | xargs --no-run-if-empty crictl --runtime-endpoint=unix://{{ cir_socket }} rm
+    crictl --runtime-endpoint=unix://{{ cri_socket }} ps --name=kube-apiserver* -q | xargs --no-run-if-empty crictl --runtime-endpoint=unix://{{ cri_socket }} rm
     {% endif %}
   when: inventory_hostname in groups['kube-master'] and dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'
