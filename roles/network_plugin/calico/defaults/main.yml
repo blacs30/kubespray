@@ -31,7 +31,7 @@ calicoctl_memory_requests: 32M
 calicoctl_cpu_requests: 250m
 
 # Enable Prometheus Metrics endpoint for felix
-calico_felix_prometheusmetricsenabled: false
+calico_felix_prometheusmetricsenabled: true
 calico_felix_prometheusmetricsport: 9091
 calico_felix_prometheusgometricsenabled: true
 calico_felix_prometheusprocessmetricsenabled: true

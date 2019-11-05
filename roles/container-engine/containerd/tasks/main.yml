@@ -3,7 +3,7 @@
   fail:
     msg: "{{ ansible_distribution }} is not supported by containerd."
   when:
-    - not ansible_distribution in ["CentOS","RedHat", "Ubuntu", "Debian", "CoreOS", "Coreos", "coreos"]
+    - not ansible_distribution in ["CentOS","RedHat", "Ubuntu", "Debian", "CoreOS", "Coreos", "coreos","Container Linux by CoreOS"]
 
 - name: gather os specific variables
   include_vars: "{{ item }}"
@@ -70,7 +70,7 @@
   when:
     - not is_atomic
     - containerd_package_info.pkgs|length > 0
-    - ansible_os_family not in ['CoreOS', 'Coreos', 'coreos']
+    - ansible_os_family not in ['CoreOS', 'Coreos', 'coreos',"Container Linux by CoreOS"]
   ignore_errors: true
 
 - name: Check if runc is installed
@@ -92,7 +92,7 @@
   when:
     - not is_atomic
     - not runc_stat.stat.exists
-    - ansible_os_family not in ['CoreOS', 'Coreos', 'coreos']
+    - ansible_os_family not in ['CoreOS', 'Coreos', 'coreos',"Container Linux by CoreOS"]
 
 - include_tasks: crictl.yml
 
@@ -106,7 +106,7 @@
   when:
     - not is_atomic
     - not runc_stat.stat.exists
-    - ansible_os_family in ['CoreOS', 'Coreos', 'coreos']
+    - ansible_os_family in ['CoreOS', 'Coreos', 'coreos',"Container Linux by CoreOS"]
 
 - name: Containerd | Copy runc binary
   copy:
@@ -117,7 +117,7 @@
   when:
     - not is_atomic
     - not runc_stat.stat.exists
-    - ansible_os_family in ['CoreOS', 'Coreos', 'coreos']
+    - ansible_os_family in ['CoreOS', 'Coreos', 'coreos',"Container Linux by CoreOS"]
 
 - name: Containerd | Install containerd systemd unit file
   template:
