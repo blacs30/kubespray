@@ -39,6 +39,10 @@
   roles:
     - { role: kubespray-defaults }
     - { role: kubernetes/preinstall, tags: preinstall }
+    - { role: download, skip_container_downloads: true, tags: download,
+        when:
+        - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk'] }
+        - deploy_container_engine|default(true)
     - { role: "container-engine", tags: "container-engine", when: deploy_container_engine|default(true) }
     - { role: download, tags: download, when: "not skip_downloads" }
   environment: "{{ proxy_env }}"

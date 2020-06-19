@@ -92,9 +92,8 @@
   notify: restart containerd
   when:
     - not is_ostree
-    - containerd_package_info.pkgs|length > 0
     - ansible_os_family not in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
-
+    - containerd_package_info.pkgs|length > 0
   ignore_errors: true
 
 - name: Check if runc is installed
