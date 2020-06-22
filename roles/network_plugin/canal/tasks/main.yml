@@ -41,6 +41,7 @@
   environment:
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ groups['etcd'][0] }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ groups['etcd'][0] }}-key.pem"
+    ETCDCTL_API: "2"
 
 - name: Canal | Create canal node manifests
   template:

@@ -9,6 +9,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
 
 - include_tasks: refresh_config.yml
   vars:
@@ -33,6 +34,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
 
 - name: Configure | Ensure etcd is running
   service:

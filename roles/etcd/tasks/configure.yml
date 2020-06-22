@@ -13,6 +13,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
 
 - name: Configure | Check if etcd-events cluster is healthy
   shell: "{{ bin_dir }}/etcdctl --endpoints={{ etcd_events_access_addresses }} cluster-health | grep -q 'cluster is healthy'"
@@ -28,6 +29,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
 
 - include_tasks: refresh_config.yml
   when: is_etcd_master
@@ -88,6 +90,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
 
 - name: Configure | Wait for etcd-events cluster to be healthy
   shell: "{{ bin_dir }}/etcdctl --no-sync --endpoints={{ etcd_events_access_addresses }} cluster-health | grep -q 'cluster is healthy'"
@@ -108,6 +111,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
 
 - name: Configure | Check if member is in etcd cluster
   shell: "{{ bin_dir }}/etcdctl --no-sync --endpoints={{ etcd_access_addresses }} member list | grep -q {{ etcd_access_address }}"
@@ -122,6 +126,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
 
 - name: Configure | Check if member is in etcd-events cluster
   shell: "{{ bin_dir }}/etcdctl --no-sync --endpoints={{ etcd_events_access_addresses }} member list | grep -q {{ etcd_access_address }}"
@@ -136,6 +141,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ inventory_hostname }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
 
 - name: Configure | Join member(s) to etcd cluster one at a time
   include_tasks: join_etcd_member.yml

@@ -34,6 +34,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ groups['etcd']|first }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ groups['etcd']|first }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
   delegate_to: "{{ groups['etcd']|first }}"
   when: inventory_hostname in groups['etcd']
 
@@ -49,6 +50,7 @@
     ETCDCTL_CERT_FILE: "{{ etcd_cert_dir }}/admin-{{ groups['etcd']|first }}.pem"
     ETCDCTL_KEY_FILE: "{{ etcd_cert_dir }}/admin-{{ groups['etcd']|first }}-key.pem"
     ETCDCTL_CA_FILE: "{{ etcd_cert_dir }}/ca.pem"
+    ETCDCTL_API: "2"
   delegate_to: "{{ groups['etcd']|first }}"
   when:
     - inventory_hostname in groups['etcd']
