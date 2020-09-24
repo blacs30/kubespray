@@ -1,9 +1,19 @@
 ---
+- name: check if fedora coreos
+  stat:
+    path: /run/ostree-booted
+  register: ostree
+
+- name: set is_ostree
+  set_fact:
+    is_ostree: "{{ ostree.stat.exists }}"
+
+
 - name: Fail containerd setup if distribution is not supported
   fail:
     msg: "{{ ansible_distribution }} is not supported by containerd."
   when:
-    - not ansible_distribution in ["CentOS","RedHat", "Ubuntu", "Debian", "CoreOS", "Coreos", "coreos","Container Linux by CoreOS"]
+    - not ansible_distribution in ["CentOS","RedHat", "Ubuntu", "Debian", "Fedora", 'Flatcar', 'Flatcar Container Linux by Kinvolk']
 
 - name: gather os specific variables
   include_vars: "{{ item }}"
@@ -24,7 +34,34 @@
   tags:
     - facts
 
+- name: disable unified_cgroup_hierarchy in Fedora 31+
+  command: grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"
+  when:
+    - ansible_distribution == "Fedora"
+    - (ansible_distribution_major_version | int) >= 31
+    - ansible_proc_cmdline['systemd.unified_cgroup_hierarchy'] is not defined or ansible_proc_cmdline['systemd.unified_cgroup_hierarchy'] != '0'
+
+- name: reboot in Fedora 31+
+  reboot:
+  when:
+    - ansible_distribution == "Fedora"
+    - (ansible_distribution_major_version | int) >= 31
+    - ansible_proc_cmdline['systemd.unified_cgroup_hierarchy'] is not defined or ansible_proc_cmdline['systemd.unified_cgroup_hierarchy'] != '0'
+
 - include_tasks: containerd_repo.yml
+  when: not is_ostree
+
+- name: Create containerd service systemd directory if it doesn't exist
+  file:
+    path: /etc/systemd/system/containerd.service.d
+    state: directory
+
+- name: Write containerd proxy drop-in
+  template:
+    src: http-proxy.conf.j2
+    dest: /etc/systemd/system/containerd.service.d/http-proxy.conf
+  notify: restart containerd
+  when: http_proxy is defined or https_proxy is defined
 
 - name: ensure containerd config directory
   file:
@@ -51,7 +88,7 @@
     mode: 0644
   when:
     - ansible_os_family in ['Ubuntu', 'Debian']
-    - not is_atomic
+    - not is_ostree
 
 - name: ensure containerd packages are installed
   action: "{{ containerd_package_info.pkg_mgr }}"
@@ -68,9 +105,9 @@
   with_items: "{{ containerd_package_info.pkgs }}"
   notify: restart containerd
   when:
-    - not is_atomic
+    - not is_ostree
+    - ansible_os_family not in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
     - containerd_package_info.pkgs|length > 0
-    - ansible_os_family not in ['CoreOS', 'Coreos', 'coreos',"Container Linux by CoreOS"]
   ignore_errors: true
 
 - name: Check if runc is installed
@@ -90,13 +127,11 @@
   delay: "{{ retry_stagger | d(3) }}"
   notify: restart containerd
   when:
-    - not is_atomic
+    - not is_ostree
     - not runc_stat.stat.exists
-    - ansible_os_family not in ['CoreOS', 'Coreos', 'coreos',"Container Linux by CoreOS"]
+    - ansible_os_family not in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
 
-- include_tasks: crictl.yml
-
-- name: Containerd | Copy containerd binaries
+- name: Copy containerd binaries
   unarchive:
     src: "{{local_release_dir}}/containerd-linux-amd64-{{ containerd_version }}.tar.gz"
     dest: "{{ bin_dir}}"
@@ -104,40 +139,58 @@
     remote_src: yes
     extra_opts: [--strip-components=1]
   when:
-    - not is_atomic
+    - not is_ostree
     - not runc_stat.stat.exists
-    - ansible_os_family in ['CoreOS', 'Coreos', 'coreos',"Container Linux by CoreOS"]
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
 
-- name: Containerd | Copy runc binary
+- name: Copy runc binary
   copy:
     src: "{{local_release_dir}}/runc-linux-amd64-{{ runc_version }}"
     dest: "{{ runc_binary }}"
     mode: 0755
     remote_src: yes
   when:
-    - not is_atomic
+    - not is_ostree
     - not runc_stat.stat.exists
-    - ansible_os_family in ['CoreOS', 'Coreos', 'coreos',"Container Linux by CoreOS"]
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
 
-- name: Containerd | Install containerd systemd unit file
+- name: Install containerd systemd unit file
   template:
     src: containerd.service.j2
     dest: /etc/systemd/system/containerd.service
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
 
-- name: Containerd | Start containerd service
+- name: Start containerd service
   service:
     name: containerd
     state: restarted
     enabled: yes
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
 
-- name: Containerd | Stop and disable docker
+- name: Stop and disable docker
   service:
     name: docker
     state: stopped
     enabled: false
   failed_when: false
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
 
-- name: Containerd | Remove docker service file
+- name: Remove docker service file
   file:
     path: /run/systemd/system/docker.service
     state: absent
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
+
+- include_tasks: crictl.yml

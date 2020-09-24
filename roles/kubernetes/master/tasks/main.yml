@@ -13,6 +13,12 @@
     dest: "{{ kube_config_dir }}/webhook-token-auth-config.yaml"
   when: kube_webhook_token_auth|default(false)
 
+- name: Create webhook authorization config
+  template:
+    src: webhook-authorization-config.yaml.j2
+    dest: "{{ kube_config_dir }}/webhook-authorization-config.yaml"
+  when: kube_webhook_authorization|default(false)
+
 - import_tasks: encrypt-at-rest.yml
   when:
     - kube_encrypt_secret_data
@@ -61,7 +67,6 @@
 
 - name: Disable SecurityContextDeny admission-controller and enable PodSecurityPolicy
   set_fact:
-    kube_apiserver_admission_control: "{{ kube_apiserver_admission_control | default([]) | difference(['SecurityContextDeny']) | union(['PodSecurityPolicy']) | unique }}"
     kube_apiserver_enable_admission_plugins: "{{ kube_apiserver_enable_admission_plugins | difference(['SecurityContextDeny']) | union(['PodSecurityPolicy']) | unique }}"
   when: podsecuritypolicy_enabled
 
