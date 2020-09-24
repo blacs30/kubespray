@@ -46,12 +46,8 @@
     - kubelet
     - upgrade
 
-# This step can be most likely be removed/deprecated/ conditioned by major distribution version
-# CoreOS and Flatcar contain socat for some years already
-- name: install | Copy socat wrapper for Container Linux with docker
+- name: install | Copy socat wrapper for Container Linux
   command: "{{ docker_bin_dir }}/docker run --rm -v {{ bin_dir }}:/opt/bin {{ install_socat_image_repo }}:{{ install_socat_image_tag }}"
   args:
     creates: "{{ bin_dir }}/socat"
-  when:
-    - container_manager == "docker"
-    - ansible_os_family in ['CoreOS', 'Container Linux by CoreOS', 'Flatcar', 'Flatcar Container Linux by Kinvolk']
+  when: ansible_os_family in ['Flatcar Container Linux by Kinvolk']
