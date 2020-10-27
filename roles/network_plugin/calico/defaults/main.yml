@@ -30,7 +30,7 @@ calico_node_cpu_requests: 150m
 calico_felix_chaininsertmode: Insert
 
 # Enable Prometheus Metrics endpoint for felix
-calico_felix_prometheusmetricsenabled: true
+calico_felix_prometheusmetricsenabled: false
 calico_felix_prometheusmetricsport: 9091
 calico_felix_prometheusgometricsenabled: true
 calico_felix_prometheusprocessmetricsenabled: true

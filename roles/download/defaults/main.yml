@@ -51,7 +51,7 @@ image_arch: "{{host_architecture | default('amd64')}}"
 # Versions
 kube_version: v1.18.9
 kubeadm_version: "{{ kube_version }}"
-etcd_version: v3.4.13
+etcd_version: v3.4.3
 
 # gcr and kubernetes image repo define
 gcr_image_repo: "gcr.io"
@@ -94,7 +94,7 @@ crictl_supported_versions:
   v1.17: "v1.17.0"
 crictl_version: "{{ crictl_supported_versions[kube_major_version] }}"
 runc_version: 1.0.0-rc92
-containerd_version: 1.4.1
+containerd_version: 1.2.13
 
 # Download URLs
 kubelet_download_url: "https://storage.googleapis.com/kubernetes-release/release/{{ kube_version }}/bin/linux/{{ image_arch }}/kubelet"
@@ -368,8 +368,8 @@ etcd_binary_checksums:
   # Etcd does not have arm32 builds at the moment, having some dummy value is
   # required to avoid "no attribute" error
   arm: 0
-  arm64: 1934ebb9f9f6501f706111b78e5e321a7ff8d7792d3d96a76e2d01874e42a300
-  amd64: 2ac029e47bab752dacdb7b30032f230f49e2f457cbc32e8f555c2210bb5ff107
+  arm64: 01bd849ad99693600bd59db8d0e66ac64aac1e3801900665c31bd393972e3554
+  amd64: 6c642b723a86941b99753dff6c00b26d3b033209b15ee33325dc8e7f4cd68f07
 cni_binary_checksums:
   arm: 5757778f4c322ffd93d7586c60037b81a2eb79271af6f4edf9ff62b4f7868ed9
   arm64: ae13d7b5c05bd180ea9b5b68f44bdaa7bfb41034a2ef1d68fd8e1259797d642f
