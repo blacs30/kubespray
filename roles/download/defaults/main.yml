@@ -86,6 +86,8 @@ ovn4nfv_k8s_plugin_image_version: "v1.1.0"
 helm_version: "v3.5.4"
 nerdctl_version: "0.8.1"
 krew_version: "v0.4.1"
+runc_version: 1.0.0-rc94
+containerd_version: 1.5.1
 
 # Get kubernetes major version (i.e. 1.17.4 => 1.17)
 kube_major_version: "{{ kube_version | regex_replace('^v([0-9])+\\.([0-9]+)\\.[0-9]+', 'v\\1.\\2') }}"
@@ -109,6 +111,8 @@ crun_download_url: "https://github.com/containers/crun/releases/download/{{ crun
 kata_containers_download_url: "https://github.com/kata-containers/runtime/releases/download/{{ kata_containers_version }}/kata-static-{{ kata_containers_version }}-{{ ansible_architecture }}.tar.xz"
 nerdctl_download_url: "https://github.com/containerd/nerdctl/releases/download/v{{ nerdctl_version }}/nerdctl-{{ nerdctl_version }}-{{ ansible_system | lower }}-{{ image_arch }}.tar.gz"
 krew_download_url: "https://github.com/kubernetes-sigs/krew/releases/download/{{ krew_version }}/krew.tar.gz"
+containerd_download_url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}.linux-amd64.tar.gz"
+runc_download_url: "https://github.com/opencontainers/runc/releases/download/v{{ runc_version }}/runc.amd64"
 
 crictl_checksums:
   arm:
@@ -125,6 +129,16 @@ crictl_checksums:
     v1.19.0: 87d8ef70b61f2fe3d8b4a48f6f712fd798c6e293ed3723c1e4bbb5052098f0ae
 
 # Checksum
+containerd_archive_checksums:
+  1.3.2: da4fac73e0c361f4f2b0839d8940ba44791292c4b479317cccec170377874f16
+  1.4.1: 744ca14c62f5b2189c9fc22e9353508e49c85ab16038f3d74a852e6842e34fa3
+  1.4.4: 2d93227ae882ce29671a863de124fe464a8b75387d69d8d618805572c8013ee8
+  1.5.1: 39447c8082b0df001d5a4888857d2f551096dbf20aa4f0912631117224d8fe52
+
+runc_archive_checksums:
+  1.0.0-rc94: 3ddc1ba511a62f87c07417837056607a95d0530f25e544815f17cb756591793b
+  1.0.0-rc92: 256bd490a55a1939a4c9cd15c043404b79a86429ee04129c00d33dab8c0cf040
+
 # Kubernetes versions above Kubespray's current target version are untested and should be used with caution.
 kubelet_checksums:
   arm:
@@ -1185,6 +1199,32 @@ downloads:
     sha256: "{{ dashboard_digest_checksum|default(None) }}"
     groups:
     - kube_control_plane
+
+  containerd:
+    enabled: "{{ container_manager == 'containerd' }}"
+    file: true
+    version: "{{ containerd_version }}"
+    dest: "{{local_release_dir}}/containerd-linux-amd64-{{ containerd_version }}.tar.gz"
+    sha256: "{{ containerd_archive_checksum }}"
+    url: "{{ containerd_download_url }}"
+    unarchive: false
+    owner: "root"
+    mode: "0755"
+    groups:
+      - kube_node
+
+  runc:
+    enabled: "{{ container_manager == 'containerd' }}"
+    file: true
+    version: "{{ runc_version }}"
+    dest: "{{local_release_dir}}/runc-linux-amd64-{{ runc_version }}"
+    sha256: "{{ runc_archive_checksum }}"
+    url: "{{ runc_download_url }}"
+    owner: "root"
+    mode: "0755"
+    unarchive: false
+    groups:
+      - kube_node
 
 download_defaults:
   container: false
