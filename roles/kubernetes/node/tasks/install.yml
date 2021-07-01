@@ -21,6 +21,14 @@
     - upgrade
   notify: Node | restart kubelet
 
+  # added socat_stat by blacs30
+- name: Check if socat is installed
+  stat:
+    path: "/bin/socat"
+  register: socat_stat
+  when:
+    - ansible_os_family in ['Flatcar Container Linux by Kinvolk']
+
 - name: install | Copy socat wrapper for Container Linux with Docker
   command: "{{ docker_bin_dir }}/docker run --rm -v {{ bin_dir }}:/opt/bin {{ install_socat_image_repo }}:{{ install_socat_image_tag }}"
   args:
@@ -28,6 +36,8 @@
   when:
     - ansible_os_family in ['Flatcar Container Linux by Kinvolk']
     - container_manager == "docker"
+    - not socat_stat.stat.exists
+    # added socat_stat by blacs30
 
 - name: install | Copy socat wrapper for Container Linux with Containerd
   command: "{{ containerd_bin_dir }}/ctr run --rm --mount type=bind,src={{ bin_dir }},dst=/opt/bin,options=rbind:rw {{ install_socat_image_repo }}:{{ install_socat_image_tag }}"
@@ -36,6 +46,8 @@
   when:
     - ansible_os_family in ['Flatcar Container Linux by Kinvolk']
     - container_manager == "containerd"
+    - not socat_stat.stat.exists
+   # added socat_stat by blacs30
 
 - name: install | Copy socat wrapper for Container Linux with crio
   command: "podman run --rm --mount type=bind,source={{ bin_dir }},destination=/opt/bin,rw=true {{ install_socat_image_repo }}:{{ install_socat_image_tag }}"
@@ -44,3 +56,5 @@
   when:
     - ansible_os_family in ['Flatcar Container Linux by Kinvolk']
     - container_manager == "crio"
+    - not socat_stat.stat.exists
+    # added socat_stat by blacs30

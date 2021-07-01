@@ -113,9 +113,9 @@
   delay: "{{ retry_stagger | d(3) }}"
   notify: restart containerd
   when:
+    - ansible_os_family not in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
     - not is_ostree
     - containerd_package_info.pkgs|length > 0
-    - ansible_os_family not in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
 
 - include_role:
     name: container-engine/crictl
