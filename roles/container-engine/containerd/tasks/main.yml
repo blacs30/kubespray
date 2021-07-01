@@ -16,7 +16,7 @@
   fail:
     msg: "{{ ansible_distribution }} is not supported by containerd."
   when:
-    - not ansible_distribution in ["CentOS", "OracleLinux", "RedHat", "Ubuntu", "Debian", "Fedora", "AlmaLinux", "Amazon"]
+    - not ansible_distribution in ["CentOS", "OracleLinux", "RedHat", "Ubuntu", "Debian", "Fedora", "AlmaLinux", "Amazon", "Flatcar", "Flatcar Container Linux by Kinvolk"]
 
 - name: gather os specific variables
   include_vars: "{{ item }}"
@@ -115,6 +115,7 @@
   when:
     - not is_ostree
     - containerd_package_info.pkgs|length > 0
+    - ansible_os_family not in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
 
 - include_role:
     name: container-engine/crictl
@@ -129,3 +130,72 @@
     name: containerd
     enabled: yes
     state: started
+
+## added by blacs30
+
+- name: Check if runc is installed
+  stat:
+    path: "{{ runc_binary }}"
+  register: runc_stat
+
+- name: Copy containerd binaries
+  unarchive:
+    src: "{{local_release_dir}}/containerd-linux-amd64-{{ containerd_version }}.tar.gz"
+    dest: "{{ bin_dir}}"
+    mode: 0755
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
+
+- name: Copy runc binary
+  copy:
+    src: "{{local_release_dir}}/runc-linux-amd64-{{ runc_version }}"
+    dest: "{{ runc_binary }}"
+    mode: 0755
+    remote_src: yes
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
+
+- name: Install containerd systemd unit file
+  template:
+    src: containerd.service.j2
+    dest: /etc/systemd/system/containerd.service
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
+
+- name: Start containerd service
+  service:
+    name: containerd
+    state: restarted
+    enabled: yes
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
+
+- name: Stop and disable docker
+  service:
+    name: docker
+    state: stopped
+    enabled: false
+  failed_when: false
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
+
+- name: Remove docker service file
+  file:
+    path: /run/systemd/system/docker.service
+    state: absent
+  when:
+    - not is_ostree
+    - not runc_stat.stat.exists
+    - ansible_os_family in ['Flatcar', 'Flatcar Container Linux by Kinvolk']
