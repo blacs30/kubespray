@@ -87,7 +87,7 @@ helm_version: "v3.5.4"
 nerdctl_version: "0.8.1"
 krew_version: "v0.4.1"
 runc_version: 1.0.0-rc94
-containerd_version: 1.5.1
+containerd_version: 1.5.2
 
 # Get kubernetes major version (i.e. 1.17.4 => 1.17)
 kube_major_version: "{{ kube_version | regex_replace('^v([0-9])+\\.([0-9]+)\\.[0-9]+', 'v\\1.\\2') }}"
@@ -111,7 +111,7 @@ crun_download_url: "https://github.com/containers/crun/releases/download/{{ crun
 kata_containers_download_url: "https://github.com/kata-containers/runtime/releases/download/{{ kata_containers_version }}/kata-static-{{ kata_containers_version }}-{{ ansible_architecture }}.tar.xz"
 nerdctl_download_url: "https://github.com/containerd/nerdctl/releases/download/v{{ nerdctl_version }}/nerdctl-{{ nerdctl_version }}-{{ ansible_system | lower }}-{{ image_arch }}.tar.gz"
 krew_download_url: "https://github.com/kubernetes-sigs/krew/releases/download/{{ krew_version }}/krew.tar.gz"
-containerd_download_url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}.linux-amd64.tar.gz"
+containerd_download_url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
 runc_download_url: "https://github.com/opencontainers/runc/releases/download/v{{ runc_version }}/runc.amd64"
 
 crictl_checksums:
@@ -134,6 +134,7 @@ containerd_archive_checksums:
   1.4.1: 744ca14c62f5b2189c9fc22e9353508e49c85ab16038f3d74a852e6842e34fa3
   1.4.4: 2d93227ae882ce29671a863de124fe464a8b75387d69d8d618805572c8013ee8
   1.5.1: 39447c8082b0df001d5a4888857d2f551096dbf20aa4f0912631117224d8fe52
+  1.5.2: 1d6d53ce7f6f9b9b51e4898e2bd8126354854b7bb436fd73e13f12f798cb1431
 
 runc_archive_checksums:
   1.0.0-rc94: 3ddc1ba511a62f87c07417837056607a95d0530f25e544815f17cb756591793b
