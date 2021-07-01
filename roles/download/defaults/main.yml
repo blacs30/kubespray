@@ -435,6 +435,8 @@ crun_binary_checksum: "{{ crun_checksums[image_arch][crun_version] }}"
 kata_containers_binary_checksum: "{{ kata_containers_binary_checksums[image_arch][kata_containers_version] }}"
 nerdctl_archive_checksum: "{{ nerdctl_archive_checksums[image_arch][nerdctl_version] }}"
 krew_archive_checksum: "{{ krew_archive_checksums[krew_version] }}"
+containerd_archive_checksum: "{{ containerd_archive_checksums[containerd_version] }}"
+runc_archive_checksum: "{{ runc_archive_checksums[runc_version] }}"
 
 # Containers
 # In some cases, we need a way to set --registry-mirror or --insecure-registry for docker,
